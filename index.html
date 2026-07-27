@@ -22,31 +22,97 @@
       <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
       <h2 id="player-title"></h2>
       <video id="player" controls playsinline>
-        <source id="player-source" src="" type="video/mp4">
         Your browser does not support the video tag.
       </video>
     </div>
   </div>
 
-  <!-- Admin modal: hidden by default, revealed only by the secret key sequence -->
+  <!-- Admin modal -->
   <div id="admin-modal" class="modal hidden">
-    <div class="modal-content">
+    <div class="modal-content admin-content">
       <button id="close-admin" class="close-btn" aria-label="Close">&times;</button>
-      <h2>Admin</h2>
+      <h2>Admin Panel</h2>
 
+      <!-- Login Form -->
       <form id="login-form">
         <input type="password" id="admin-password" placeholder="Password" autocomplete="current-password" required>
         <button type="submit">Log in</button>
         <p id="login-error" class="error"></p>
       </form>
 
-      <form id="add-video-form" class="hidden">
-        <input type="text" id="video-title" placeholder="Title" required>
-        <input type="url" id="video-url" placeholder="Video URL (direct link / stream)" required>
-        <input type="url" id="video-thumb" placeholder="Thumbnail URL (optional)">
-        <button type="submit">Add video</button>
-        <p id="add-status"></p>
-      </form>
+      <!-- Admin Dashboard -->
+      <div id="admin-dashboard" class="hidden">
+        
+        <!-- Grid Styling Controls -->
+        <section class="admin-section">
+          <h3>Grid & Card Layout Settings</h3>
+          <div id="grid-settings-form" class="settings-grid">
+            <div class="setting-group">
+              <label for="setting-columns">Columns per Row</label>
+              <input type="number" id="setting-columns" min="1" max="12" value="4">
+            </div>
+            <div class="setting-group">
+              <label for="setting-gap">Grid Gap (px)</label>
+              <input type="number" id="setting-gap" min="0" max="100" value="20">
+            </div>
+            <div class="setting-group">
+              <label for="setting-cell-height">Cell Aspect Ratio / Height</label>
+              <select id="setting-cell-height">
+                <option value="auto">Auto (16:9 Thumbnail)</option>
+                <option value="150px">Fixed 150px</option>
+                <option value="200px">Fixed 200px</option>
+                <option value="250px">Fixed 250px</option>
+              </select>
+            </div>
+            <div class="setting-group">
+              <label for="setting-padding">Card Padding (px)</label>
+              <input type="number" id="setting-padding" min="0" max="50" value="0">
+            </div>
+            <div class="setting-group">
+              <label for="setting-bg-color">Card Background Color</label>
+              <input type="color" id="setting-bg-color" value="#1e2126">
+            </div>
+            <div class="setting-group">
+              <label for="setting-border-width">Border Width (px)</label>
+              <input type="number" id="setting-border-width" min="0" max="20" value="0">
+            </div>
+            <div class="setting-group">
+              <label for="setting-border-color">Border Color</label>
+              <input type="color" id="setting-border-color" value="#3a3f47">
+            </div>
+          </div>
+          <button id="save-grid-settings-btn" class="secondary-btn" style="margin-top: 10px;">Apply & Save Settings</button>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Video Add/Edit -->
+        <section class="admin-section">
+          <h3 id="form-heading">Add New Video</h3>
+          <form id="video-form">
+            <input type="hidden" id="video-id">
+            <input type="text" id="video-title" placeholder="Title" required>
+            <input type="url" id="video-url" placeholder="Video URL (direct link / stream)" required>
+            <input type="url" id="video-thumb" placeholder="Thumbnail URL (optional)">
+            
+            <div class="form-actions">
+              <button type="submit" id="save-video-btn">Add Video</button>
+              <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancel Edit</button>
+            </div>
+            <p id="add-status"></p>
+          </form>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Video List & Manual Placement -->
+        <section class="admin-section">
+          <h3>Manage & Place Videos</h3>
+          <p class="help-text">Drag items or use position input to place videos directly into specific grid slots.</p>
+          <ul id="admin-video-list" class="admin-list"></ul>
+        </section>
+      </div>
+
     </div>
   </div>
 
