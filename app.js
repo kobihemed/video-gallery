@@ -27,6 +27,7 @@ let sections = [{ id: "default", title: "All Videos" }];
 let gridSettings = { ...DEFAULT_SETTINGS };
 let currentActiveVideoIndex = -1;
 let collapsedSections = new Set();
+let isInitialLoad = true;
 let isListView = false;
 
 async function sha256(text) {
@@ -161,6 +162,12 @@ async function loadGallery() {
       gridSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
     }
 
+    // Collapse all sections by default on initial page load
+    if (isInitialLoad) {
+      sections.forEach((sec) => collapsedSections.add(sec.id));
+      isInitialLoad = false;
+    }
+
     applyGridStyles();
     syncSettingsInputs();
     populateSectionDropdowns();
@@ -195,6 +202,7 @@ function renderSectionNav(sectionMap) {
     btn.innerHTML = `${escapeHtml(sec.title)} <span class="section-nav-badge">${count}</span>`;
 
     btn.addEventListener("click", () => {
+      // Auto-expand the target section if collapsed
       if (collapsedSections.has(sec.id)) {
         collapsedSections.delete(sec.id);
         renderGallery();
@@ -219,6 +227,13 @@ function renderGallery() {
   container.innerHTML = "";
 
   const searchQuery = (document.getElementById("gallery-search")?.value || "").toLowerCase().trim();
+
+  // Update Expand/Collapse All Button Text
+  const toggleCollapseBtn = document.getElementById("toggle-collapse-btn");
+  if (toggleCollapseBtn) {
+    const allCollapsed = sections.every((sec) => collapsedSections.has(sec.id));
+    toggleCollapseBtn.textContent = allCollapsed ? "📂 Expand All" : "📁 Collapse All";
+  }
 
   const filteredVideos = currentVideos.filter((v) => {
     const titleMatch = (v.title || "").toLowerCase().includes(searchQuery);
@@ -248,7 +263,9 @@ function renderGallery() {
     const secData = sectionMap[sec.id];
     if (!secData || secData.videos.length === 0) return;
 
-    const isCollapsed = collapsedSections.has(sec.id);
+    // Auto-expand section if searching
+    const isSearching = searchQuery.length > 0;
+    const isCollapsed = isSearching ? false : collapsedSections.has(sec.id);
 
     if (sections.length > 1 || sec.id !== "default") {
       const headerWrapper = document.createElement("div");
@@ -300,8 +317,8 @@ function escapeHtml(str) {
 }
 
 // ---- Thumbnail Auto-Fetcher ----
-document.getElementById("auto-fetch-thumb-btn")?.addEventListener("click", () => {
-  const url = document.getElementById("video-url").value;
+document.getElementById("auto-fetch-thumb-btn")?.addEventListener("click", async () => {
+  const url = document.getElementById("video-url").value.trim();
   const thumbInput = document.getElementById("video-thumb");
 
   if (!url) return alert("Please enter a video URL first.");
@@ -332,7 +349,7 @@ function getEmbedUrl(rawUrl) {
   return null;
 }
 
-// ---- Video Player with Controls ----
+// ---- Video Player Controls ----
 function playVideoAtIndex(index) {
   if (index < 0 || index >= currentVideos.length) return;
 
@@ -369,7 +386,6 @@ function playVideoAtIndex(index) {
 
   document.getElementById("player-modal").classList.remove("hidden");
 
-  // Track Play Count in Worker
   fetch(`${API_BASE}/increment-play`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -398,8 +414,22 @@ document.getElementById("close-player")?.addEventListener("click", () => {
   document.getElementById("player-modal").classList.add("hidden");
 });
 
-// ---- Search & View Mode Listeners ----
+// ---- Search, Expand/Collapse All & View Mode Listeners ----
 document.getElementById("gallery-search")?.addEventListener("input", renderGallery);
+
+document.getElementById("toggle-collapse-btn")?.addEventListener("click", () => {
+  const allCollapsed = sections.every((sec) => collapsedSections.has(sec.id));
+
+  if (allCollapsed) {
+    // Expand All
+    collapsedSections.clear();
+  } else {
+    // Collapse All
+    sections.forEach((sec) => collapsedSections.add(sec.id));
+  }
+
+  renderGallery();
+});
 
 document.getElementById("toggle-view-btn")?.addEventListener("click", () => {
   isListView = !isListView;
@@ -565,7 +595,12 @@ document.getElementById("add-section-form")?.addEventListener("submit", async (e
   const title = input.value.trim();
   if (!title) return;
 
-  sections.push({ id: `sec-${Date.now()}`, title });
+  const newSec = { id: `sec-${Date.now()}`, title };
+  sections.push(newSec);
+
+  // New sections start collapsed by default
+  collapsedSections.add(newSec.id);
+
   input.value = "";
 
   renderSectionList();
@@ -592,6 +627,7 @@ function renderSectionList() {
     if (sec.id !== "default") {
       li.querySelector(".delete-btn").addEventListener("click", async () => {
         sections.splice(idx, 1);
+        collapsedSections.delete(sec.id);
         renderSectionList();
         populateSectionDropdowns();
         renderGallery();
