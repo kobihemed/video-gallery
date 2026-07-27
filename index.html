@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Gallery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Video Gallery</h1>
+  </header>
+
+  <main id="gallery" class="grid">
+    <p id="empty-msg" class="hidden">No videos yet.</p>
+  </main>
+
+  <!-- Player modal -->
+  <div id="player-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
+      <h2 id="player-title"></h2>
+      <video id="player" controls playsinline>
+        <source id="player-source" src="" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+
+  <!-- Admin modal: hidden by default, revealed only by the secret key sequence -->
+  <div id="admin-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="close-admin" class="close-btn" aria-label="Close">&times;</button>
+      <h2>Admin</h2>
+
+      <form id="login-form">
+        <input type="password" id="admin-password" placeholder="Password" autocomplete="current-password" required>
+        <button type="submit">Log in</button>
+        <p id="login-error" class="error"></p>
+      </form>
+
+      <form id="add-video-form" class="hidden">
+        <input type="text" id="video-title" placeholder="Title" required>
+        <input type="url" id="video-url" placeholder="Video URL (direct link / stream)" required>
+        <input type="url" id="video-thumb" placeholder="Thumbnail URL (optional)">
+        <button type="submit">Add video</button>
+        <p id="add-status"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
