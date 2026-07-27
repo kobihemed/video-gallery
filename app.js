@@ -2,7 +2,7 @@
 const API_BASE = "https://video-gallery-api.kobihemed.workers.dev";
 
 // SHA-256 hash of "video2026"
-const TRIGGER_HASH = "0c81d72d645b6f16b0c724269b7a3ae14105fb382826351a037e50a5037e3155";
+const TRIGGER_HASH = "055bf1bc44c107144e5fa64117ae87b1c1dfef38ca15eddbfe48ea0ca64696f8";
 // =======================================================================
 
 let adminToken = null;
