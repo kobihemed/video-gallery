@@ -7,7 +7,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": origin === allowedOrigin ? origin : allowedOrigin,
       "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, Range",
       "Vary": "Origin",
     };
 
@@ -24,6 +24,21 @@ export default {
       }
       if (url.pathname === "/add-video" && request.method === "POST") {
         return await addVideo(request, env, corsHeaders);
+      }
+      if (url.pathname === "/edit-video" && request.method === "POST") {
+        return await editVideo(request, env, corsHeaders);
+      }
+      if (url.pathname === "/reorder-videos" && request.method === "POST") {
+        return await reorderVideos(request, env, corsHeaders);
+      }
+      if (url.pathname === "/delete-video" && request.method === "POST") {
+        return await deleteVideoFromBody(request, env, corsHeaders);
+      }
+      if (url.pathname === "/grid-settings" && request.method === "GET") {
+        return await getGridSettings(env, corsHeaders);
+      }
+      if (url.pathname === "/save-grid-settings" && request.method === "POST") {
+        return await saveGridSettings(request, env, corsHeaders);
       }
       if (url.pathname.startsWith("/stream/") && request.method === "GET") {
         return await streamVideo(request, url, env, corsHeaders);
@@ -93,7 +108,7 @@ async function verifyJWT(token, secret) {
     new TextEncoder().encode(`${headerB64}.${payloadB64}`)
   );
   if (!valid) throw Object.assign(new Error("Invalid signature"), { status: 401 });
-  const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(payloadB64)));
+  const payload = JSON.parse(new TextEncoder().decode(b64urlDecode(payloadB64)));
   if (payload.exp && Date.now() > payload.exp) {
     throw Object.assign(new Error("Token expired"), { status: 401 });
   }
@@ -116,7 +131,7 @@ async function listVideos(env, corsHeaders) {
   const videos = [];
   for (const id of list) {
     const v = await env.VIDEOS_KV.get(`video:${id}`, "json");
-    if (v) videos.push({ id, title: v.title, thumbnail: v.thumbnail || null });
+    if (v) videos.push({ id, title: v.title, url: v.url, thumbnail: v.thumbnail || null });
   }
   return new Response(JSON.stringify(videos), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -166,6 +181,60 @@ async function addVideo(request, env, corsHeaders) {
   });
 }
 
+async function editVideo(request, env, corsHeaders) {
+  await requireAdmin(request, env);
+  const { id, title, url, thumbnail } = await request.json();
+  if (!id || !title || !url) {
+    return new Response(JSON.stringify({ error: "ID, Title, and URL are required" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  await env.VIDEOS_KV.put(`video:${id}`, JSON.stringify({ title, url, thumbnail: thumbnail || null }));
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function reorderVideos(request, env, corsHeaders) {
+  await requireAdmin(request, env);
+  const { orderedIds } = await request.json();
+  if (!Array.isArray(orderedIds)) {
+    return new Response(JSON.stringify({ error: "orderedIds must be an array" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  await env.VIDEOS_KV.put("index", JSON.stringify(orderedIds));
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function deleteVideoFromBody(request, env, corsHeaders) {
+  await requireAdmin(request, env);
+  const { id } = await request.json();
+  if (!id) {
+    return new Response(JSON.stringify({ error: "ID required" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  await env.VIDEOS_KV.delete(`video:${id}`);
+  let list = (await env.VIDEOS_KV.get("index", "json")) || [];
+  list = list.filter((v) => v !== id);
+  await env.VIDEOS_KV.put("index", JSON.stringify(list));
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function deleteVideo(request, url, env, corsHeaders) {
   await requireAdmin(request, env);
   const id = url.pathname.split("/").pop();
@@ -180,24 +249,53 @@ async function deleteVideo(request, url, env, corsHeaders) {
   });
 }
 
+async function getGridSettings(env, corsHeaders) {
+  const settings = (await env.VIDEOS_KV.get("grid_settings", "json")) || {};
+  return new Response(JSON.stringify(settings), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function saveGridSettings(request, env, corsHeaders) {
+  await requireAdmin(request, env);
+  const settings = await request.json();
+  await env.VIDEOS_KV.put("grid_settings", JSON.stringify(settings));
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function streamVideo(request, url, env, corsHeaders) {
   const id = url.pathname.split("/").pop();
   const v = await env.VIDEOS_KV.get(`video:${id}`, "json");
-  if (!v) return new Response("Not found", { status: 404, headers: corsHeaders });
+  if (!v || !v.url) {
+    return new Response("Video not found", { status: 404, headers: corsHeaders });
+  }
 
+  // Forward Range headers for seeking/streaming
   const upstreamHeaders = {};
   const range = request.headers.get("Range");
   if (range) upstreamHeaders["Range"] = range;
 
-  const upstream = await fetch(v.url, { headers: upstreamHeaders });
+  try {
+    const upstream = await fetch(v.url, { headers: upstreamHeaders });
 
-  const headers = new Headers(corsHeaders);
-  headers.set("Content-Type", upstream.headers.get("Content-Type") || "video/mp4");
-  headers.set("Accept-Ranges", "bytes");
-  const cl = upstream.headers.get("Content-Length");
-  if (cl) headers.set("Content-Length", cl);
-  const cr = upstream.headers.get("Content-Range");
-  if (cr) headers.set("Content-Range", cr);
+    const headers = new Headers(corsHeaders);
+    headers.set("Content-Type", upstream.headers.get("Content-Type") || "video/mp4");
+    headers.set("Accept-Ranges", "bytes");
 
-  return new Response(upstream.body, { status: upstream.status, headers });
+    const cl = upstream.headers.get("Content-Length");
+    if (cl) headers.set("Content-Length", cl);
+
+    const cr = upstream.headers.get("Content-Range");
+    if (cr) headers.set("Content-Range", cr);
+
+    return new Response(upstream.body, { status: upstream.status, headers });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Failed to fetch remote video file" }), {
+      status: 502,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 }
