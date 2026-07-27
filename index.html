@@ -16,14 +16,19 @@
     <p id="empty-msg" class="hidden">No videos yet.</p>
   </main>
 
-  <!-- Player modal -->
+<!-- Player modal -->
   <div id="player-modal" class="modal hidden">
     <div class="modal-content">
       <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
       <h2 id="player-title"></h2>
-      <video id="player" controls playsinline>
+      
+      <!-- Native video tag for direct .mp4 / stream URLs -->
+      <video id="player" controls playsinline class="hidden">
         Your browser does not support the video tag.
       </video>
+
+      <!-- Iframe player for YouTube, Streamable, Vimeo, etc. -->
+      <iframe id="iframe-player" class="hidden" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </div>
   </div>
 
