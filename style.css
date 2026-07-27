@@ -19,19 +19,23 @@ header h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(var(--grid-columns, 4), 1fr);
+  gap: var(--grid-gap, 20px);
   padding: 0 24px 40px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .card {
-  background: #1e2126;
+  background: var(--card-bg, #1e2126);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: var(--card-border-width, 0px) solid var(--card-border-color, transparent);
+  padding: var(--card-padding, 0px);
+  display: flex;
+  flex-direction: column;
 }
 
 .card:hover {
@@ -44,6 +48,7 @@ header h1 {
   background-size: cover;
   background-position: center;
   background-color: #2a2e35;
+  height: var(--cell-height, auto);
 }
 
 .card .title {
@@ -97,7 +102,7 @@ form {
   margin-top: 12px;
 }
 
-input {
+input, select {
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid #3a3f47;
@@ -130,4 +135,144 @@ button[type="submit"]:hover {
   font-size: 13px;
   margin: 0;
   color: #9ad19a;
+}
+
+/* --- Admin Panel Custom Controls --- */
+
+.admin-content {
+  width: min(92vw, 750px);
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background: #3a3f47;
+  margin: 24px 0;
+}
+
+.admin-section h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #d1d5db;
+}
+
+.help-text {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-group label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.secondary-btn {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #374151;
+}
+
+.admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #14161a;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #2a2e35;
+  gap: 12px;
+  cursor: grab;
+}
+
+.admin-item.dragging {
+  opacity: 0.4;
+}
+
+.admin-item-title {
+  font-size: 14px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-item-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pos-input {
+  width: 55px;
+  padding: 4px 6px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.btn-icon {
+  background: #2a2e35;
+  border: none;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-icon:hover {
+  background: #3a3f47;
+}
+
+.btn-icon.delete-btn {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.btn-icon.delete-btn:hover {
+  background: #991b1b;
+}
+
+/* Responsive Grid Overrides */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  }
 }
