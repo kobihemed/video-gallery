@@ -16,18 +16,18 @@
     <p id="empty-msg" class="hidden">No videos yet.</p>
   </main>
 
-<!-- Player modal -->
+  <!-- Player modal -->
   <div id="player-modal" class="modal hidden">
     <div class="modal-content">
       <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
       <h2 id="player-title"></h2>
       
-      <!-- Native video tag for direct .mp4 / stream URLs -->
+      <!-- Native video player -->
       <video id="player" controls playsinline class="hidden">
         Your browser does not support the video tag.
       </video>
 
-      <!-- Iframe player for YouTube, Streamable, Vimeo, etc. -->
+      <!-- Iframe player for YouTube, Streamable, etc. -->
       <iframe id="iframe-player" class="hidden" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </div>
   </div>
@@ -91,7 +91,7 @@
 
         <hr class="divider">
 
-        <!-- Video Add/Edit -->
+        <!-- Video Add/Edit Form -->
         <section class="admin-section">
           <h3 id="form-heading">Add New Video</h3>
           <form id="video-form">
@@ -110,7 +110,7 @@
 
         <hr class="divider">
 
-        <!-- Video List & Manual Placement -->
+        <!-- Video List & Placement -->
         <section class="admin-section">
           <h3>Manage & Place Videos</h3>
           <p class="help-text">Drag items or use position input to place videos directly into specific grid slots.</p>
