@@ -10,26 +10,39 @@
 
   <header>
     <h1 id="page-title-heading">Video Gallery</h1>
+    
+    <!-- Gallery Controls: Search Bar & View Mode Toggle -->
+    <div class="gallery-controls">
+      <input type="text" id="gallery-search" placeholder="🔍 Search videos or sections..." />
+      <button id="toggle-view-btn" class="secondary-btn" title="Toggle Grid/List View">📋 List View</button>
+    </div>
   </header>
 
+  <!-- Sticky Quick Section Navigation Menu -->
+  <nav id="section-nav" class="section-nav-bar hidden">
+    <div id="section-nav-links" class="section-nav-container"></div>
+  </nav>
+
   <main id="gallery-container">
-    <p id="empty-msg" class="hidden">No videos yet.</p>
-    <!-- Sections and grids will render dynamically here -->
+    <p id="empty-msg" class="hidden">No videos match your query.</p>
   </main>
 
-  <!-- Player modal -->
+  <!-- Player modal with Next/Prev navigation -->
   <div id="player-modal" class="modal hidden">
-    <div class="modal-content">
+    <div class="modal-content player-modal-content">
       <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
-      <h2 id="player-title"></h2>
       
-      <!-- Native video tag -->
-      <video id="player" controls playsinline class="hidden">
-        Your browser does not support the video tag.
-      </video>
+      <div class="modal-player-wrapper">
+        <button id="prev-video-btn" class="nav-arrow left" aria-label="Previous Video">&#10094;</button>
+        
+        <div class="media-container">
+          <h2 id="player-title"></h2>
+          <video id="player" controls playsinline class="hidden">Your browser does not support video.</video>
+          <iframe id="iframe-player" class="hidden" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        </div>
 
-      <!-- Iframe player for embeds -->
-      <iframe id="iframe-player" class="hidden" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        <button id="next-video-btn" class="nav-arrow right" aria-label="Next Video">&#10095;</button>
+      </div>
     </div>
   </div>
 
@@ -37,7 +50,11 @@
   <div id="admin-modal" class="modal hidden">
     <div class="modal-content admin-content">
       <button id="close-admin" class="close-btn" aria-label="Close">&times;</button>
-      <h2>Admin Panel</h2>
+      
+      <div class="admin-header-bar">
+        <h2>Admin Panel</h2>
+        <button id="open-analytics-btn" class="secondary-btn hidden">📊 Analytics & Stats</button>
+      </div>
 
       <!-- Login Form -->
       <form id="login-form">
@@ -49,7 +66,7 @@
       <!-- Admin Dashboard -->
       <div id="admin-dashboard" class="hidden">
         
-        <!-- Page Title Customization -->
+        <!-- Page Title & Branding -->
         <section class="admin-section">
           <h3>Page Branding</h3>
           <div class="setting-group">
@@ -64,8 +81,6 @@
         <section class="admin-section">
           <h3>Grid & Color Customization</h3>
           <div id="grid-settings-form" class="settings-grid">
-            
-            <!-- Grid Layout -->
             <div class="setting-group">
               <label for="setting-columns">Columns per Row</label>
               <input type="number" id="setting-columns" min="1" max="12" value="4">
@@ -88,7 +103,7 @@
               <input type="number" id="setting-padding" min="0" max="50" value="0">
             </div>
 
-            <!-- Color Pickers -->
+            <!-- Live Color Pickers -->
             <div class="setting-group">
               <label for="setting-page-bg">Page Background</label>
               <input type="color" id="setting-page-bg" value="#14161a">
@@ -126,6 +141,9 @@
           <div class="form-actions" style="margin-top: 15px;">
             <button id="save-grid-settings-btn" class="secondary-btn">Save Layout & Colors</button>
             <button id="reset-design-btn" class="danger-btn">Reset Design to Defaults</button>
+            <button id="export-json-btn" class="secondary-btn">📥 Backup JSON</button>
+            <button id="import-json-btn" class="secondary-btn">📤 Restore JSON</button>
+            <input type="file" id="import-file-input" accept=".json" class="hidden">
           </div>
         </section>
 
@@ -135,7 +153,7 @@
         <section class="admin-section">
           <h3>Manage Gallery Sections</h3>
           <form id="add-section-form" class="inline-form">
-            <input type="text" id="new-section-title" placeholder="New Section Header Name..." required>
+            <input type="text" id="new-section-title" placeholder="New Section Name..." required>
             <button type="submit">Add Section</button>
           </form>
           <ul id="admin-section-list" class="admin-list" style="margin-top: 10px;"></ul>
@@ -143,13 +161,18 @@
 
         <hr class="divider">
 
-        <!-- Video Add/Edit Form -->
+        <!-- Add / Edit Video -->
         <section class="admin-section">
           <h3 id="form-heading">Add New Video</h3>
           <form id="video-form">
             <input type="hidden" id="video-id">
             <input type="text" id="video-title" placeholder="Title" required>
-            <input type="url" id="video-url" placeholder="Video URL (direct link / stream)" required>
+            
+            <div class="inline-form">
+              <input type="url" id="video-url" placeholder="Video URL (YouTube, Streamable, or Direct MP4)" required>
+              <button type="button" id="auto-fetch-thumb-btn" class="secondary-btn">⚡ Auto Thumbnail</button>
+            </div>
+            
             <input type="url" id="video-thumb" placeholder="Thumbnail URL (optional)">
             <input type="text" id="video-duration" placeholder="Duration (e.g. 03:45 or 12:30)">
             
@@ -168,14 +191,70 @@
 
         <hr class="divider">
 
-        <!-- Video List & Placement -->
+        <!-- Scaleable Admin Video Manager for 100+ items -->
         <section class="admin-section">
-          <h3>Manage & Place Videos</h3>
-          <p class="help-text">Drag items or use position input to place videos directly into specific grid slots.</p>
-          <ul id="admin-video-list" class="admin-list"></ul>
+          <h3>Manage Large Video Library</h3>
+          
+          <div class="admin-filter-bar">
+            <input type="text" id="admin-search-input" placeholder="🔍 Search library..." />
+            <select id="admin-sort-select">
+              <option value="default">Sort: Default Order</option>
+              <option value="title-asc">Sort: A - Z</option>
+              <option value="title-desc">Sort: Z - A</option>
+              <option value="plays-desc">Sort: Most Played</option>
+            </select>
+          </div>
+
+          <div class="bulk-actions-bar">
+            <label><input type="checkbox" id="select-all-videos"> Select All</label>
+            <span>Move selected to:</span>
+            <select id="bulk-move-section-select"></select>
+            <button id="apply-bulk-move-btn" class="secondary-btn">Move</button>
+          </div>
+
+          <div id="admin-section-accordions"></div>
         </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Analytics Modal -->
+  <div id="analytics-modal" class="modal hidden">
+    <div class="modal-content admin-content">
+      <button id="close-analytics" class="close-btn" aria-label="Close">&times;</button>
+      <h2>📊 Analytics & Play Statistics</h2>
+
+      <div class="stats-cards-grid">
+        <div class="stat-card">
+          <span class="stat-number" id="stat-total-videos">0</span>
+          <span class="stat-label">Total Videos</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="stat-total-sections">0</span>
+          <span class="stat-label">Total Sections</span>
+        </div>
+        <div class="stat-card highlight">
+          <span class="stat-number" id="stat-total-plays">0</span>
+          <span class="stat-label">Total Video Plays</span>
+        </div>
       </div>
 
+      <hr class="divider">
+
+      <h3>Plays Per Video</h3>
+      <input type="text" id="analytics-search-input" placeholder="🔍 Search video titles to check views..." />
+
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Video Title</th>
+            <th>Section</th>
+            <th style="text-align: right;">Total Plays</th>
+          </tr>
+        </thead>
+        <tbody id="analytics-table-body"></tbody>
+      </table>
     </div>
   </div>
 
