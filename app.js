@@ -1,8 +1,8 @@
 // ======= CONFIGURE THESE TWO VALUES AFTER DEPLOYING THE WORKER =======
 const API_BASE = "https://video-gallery-api.kobihemed.workers.dev";
 
-// SHA-256 hash of "video2026"
-const TRIGGER_HASH = "0c81d72d645b6f16b0c724269b7a3ae14105fb382826351a037e50a5037e3155";
+// SHA-256 hash of "kobiadmin"
+const TRIGGER_HASH = "055bf1bc44c107144e5fa64117ae87b1c1dfef38ca15eddbfe48ea0ca64696f8";
 // =======================================================================
 
 const DEFAULT_SETTINGS = {
@@ -35,7 +35,6 @@ async function sha256(text) {
 // ---- Secret Keystroke Trigger ----
 let keyBuffer = "";
 window.addEventListener("keydown", async (e) => {
-  // Ignore typing inside input/select elements
   if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
   if (e.key.length > 1 && e.key !== "Backspace") return;
 
@@ -123,7 +122,26 @@ function bindLiveColorPickers() {
   }
 }
 
-// ---- Load Gallery & Settings ----
+// ---- Save Remote Settings Helper ----
+async function saveRemoteSettings() {
+  gridSettings.sections = sections;
+  if (!adminToken) return;
+
+  try {
+    await fetch(`${API_BASE}/save-grid-settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify(gridSettings),
+    });
+  } catch (err) {
+    console.warn("Unable to save settings remotely", err);
+  }
+}
+
+// ---- Load Gallery & Remote Settings ----
 async function loadGallery() {
   try {
     const [vidRes, setRes] = await Promise.all([
@@ -131,7 +149,7 @@ async function loadGallery() {
       fetch(`${API_BASE}/grid-settings`).catch(() => null)
     ]);
 
-    if (vidRes.ok) {
+    if (vidRes && vidRes.ok) {
       currentVideos = await vidRes.json();
     } else {
       currentVideos = [];
@@ -139,7 +157,7 @@ async function loadGallery() {
 
     if (setRes && setRes.ok) {
       const savedSettings = await setRes.json();
-      if (savedSettings.sections) {
+      if (savedSettings.sections && Array.isArray(savedSettings.sections) && savedSettings.sections.length > 0) {
         sections = savedSettings.sections;
       }
       gridSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
@@ -147,19 +165,19 @@ async function loadGallery() {
 
     applyGridStyles();
     syncSettingsInputs();
+    populateSectionDropdown();
+    renderSectionList();
     renderGallery();
 
     if (adminToken) {
       renderAdminList();
-      renderSectionList();
-      populateSectionDropdown();
     }
   } catch (err) {
     console.error("Failed to load gallery/settings", err);
   }
 }
 
-// ---- Render Main Page ----
+// ---- Render Main Page by Sections ----
 function renderGallery() {
   const container = document.getElementById("gallery-container");
   container.innerHTML = "";
@@ -169,26 +187,29 @@ function renderGallery() {
     return;
   }
 
+  // Create section mapping bucket
   const sectionMap = {};
   sections.forEach((sec) => {
     sectionMap[sec.id] = { title: sec.title, videos: [] };
   });
 
+  // Fallback for default
   if (!sectionMap["default"]) {
     sectionMap["default"] = { title: "Videos", videos: [] };
   }
 
+  // Group videos into their respective section
   currentVideos.forEach((v) => {
     const secId = v.sectionId && sectionMap[v.sectionId] ? v.sectionId : "default";
     sectionMap[secId].videos.push(v);
   });
 
-  Object.keys(sectionMap).forEach((secId) => {
-    const secData = sectionMap[secId];
-    if (secData.videos.length === 0 && sections.length > 1 && secId === "default") return;
-    if (secData.videos.length === 0) return;
+  // Render sections with videos
+  sections.forEach((sec) => {
+    const secData = sectionMap[sec.id];
+    if (!secData || secData.videos.length === 0) return;
 
-    if (sections.length > 1 || secId !== "default") {
+    if (sections.length > 1 || sec.id !== "default") {
       const header = document.createElement("h2");
       header.className = "section-header";
       header.textContent = secData.title;
@@ -322,7 +343,7 @@ document.getElementById("close-admin").addEventListener("click", () => {
   document.getElementById("admin-modal").classList.add("hidden");
 });
 
-// ---- Save Custom Design Settings ----
+// ---- Save Design Settings ----
 document.getElementById("save-grid-settings-btn").addEventListener("click", async () => {
   gridSettings = {
     ...gridSettings,
@@ -343,22 +364,8 @@ document.getElementById("save-grid-settings-btn").addEventListener("click", asyn
   };
 
   applyGridStyles();
-
-  if (adminToken) {
-    try {
-      await fetch(`${API_BASE}/save-grid-settings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify(gridSettings),
-      });
-      alert("Design settings saved successfully.");
-    } catch (err) {
-      console.warn("Unable to save grid settings remotely", err);
-    }
-  }
+  await saveRemoteSettings();
+  alert("Design & Sections saved successfully.");
 });
 
 // ---- Reset Design Button ----
@@ -368,25 +375,11 @@ document.getElementById("reset-design-btn").addEventListener("click", async () =
   gridSettings = { ...DEFAULT_SETTINGS, sections };
   applyGridStyles();
   syncSettingsInputs();
-
-  if (adminToken) {
-    try {
-      await fetch(`${API_BASE}/save-grid-settings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify(gridSettings),
-      });
-    } catch (err) {
-      console.warn("Error resetting settings remotely", err);
-    }
-  }
+  await saveRemoteSettings();
 });
 
 // ---- Section Management ----
-document.getElementById("add-section-form").addEventListener("submit", (e) => {
+document.getElementById("add-section-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const input = document.getElementById("new-section-title");
   const title = input.value.trim();
@@ -399,10 +392,14 @@ document.getElementById("add-section-form").addEventListener("submit", (e) => {
   renderSectionList();
   populateSectionDropdown();
   renderGallery();
+
+  // Instantly persist new section to KV backend
+  await saveRemoteSettings();
 });
 
 function renderSectionList() {
   const listEl = document.getElementById("admin-section-list");
+  if (!listEl) return;
   listEl.innerHTML = "";
 
   sections.forEach((sec, idx) => {
@@ -416,11 +413,12 @@ function renderSectionList() {
     `;
 
     if (sec.id !== "default") {
-      li.querySelector(".delete-btn").addEventListener("click", () => {
+      li.querySelector(".delete-btn").addEventListener("click", async () => {
         sections.splice(idx, 1);
         renderSectionList();
         populateSectionDropdown();
         renderGallery();
+        await saveRemoteSettings();
       });
     }
 
@@ -430,6 +428,7 @@ function renderSectionList() {
 
 function populateSectionDropdown() {
   const select = document.getElementById("video-section-select");
+  if (!select) return;
   select.innerHTML = "";
   sections.forEach((sec) => {
     const opt = document.createElement("option");
@@ -514,11 +513,12 @@ function startEditVideo(video) {
   document.getElementById("cancel-edit-btn").classList.remove("hidden");
 }
 
-// ---- Render Video List & Placement Controls ----
+// ---- Render Video List Controls ----
 let draggedIndex = null;
 
 function renderAdminList() {
   const listEl = document.getElementById("admin-video-list");
+  if (!listEl) return;
   listEl.innerHTML = "";
 
   if (currentVideos.length === 0) {
@@ -626,6 +626,6 @@ async function deleteVideo(id) {
   }
 }
 
-// Initialize live pickers and gallery
+// Initialize live pickers and load gallery
 bindLiveColorPickers();
 loadGallery();
