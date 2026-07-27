@@ -133,19 +133,44 @@ function getEmbedUrl(rawUrl) {
   return null;
 }
 
+// ---- Helper to parse & convert third-party embed links ----
+function getEmbedUrl(rawUrl) {
+  if (!rawUrl) return null;
+
+  // Convert GitHub blob links directly to raw file URLs
+  if (rawUrl.includes("github.com/") && rawUrl.includes("/blob/")) {
+    return rawUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+  }
+
+  // 1. YouTube (e.g. https://youtu.be/uwKcL3540fk?si=... or https://www.youtube.com/watch?v=uwKcL3540fk)
+  const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1`;
+  }
+
+  // 2. Streamable (e.g. https://streamable.com/e/8fkg7h)
+  const streamableMatch = rawUrl.match(/streamable\.com\/(?:e\/)?([a-zA-Z0-9]+)/);
+  if (streamableMatch && streamableMatch[1]) {
+    return `https://streamable.com/e/${streamableMatch[1]}?autoplay=1`;
+  }
+
+  return null;
+}
+
 // ---- Universal Video Player Handler ----
 function playVideo(id, title) {
   const player = document.getElementById("player");
   const iframe = document.getElementById("iframe-player");
   document.getElementById("player-title").textContent = title;
 
-  // Find the video object from loaded gallery list
   const videoObj = currentVideos.find((v) => v.id === id);
   const rawUrl = videoObj ? videoObj.url : "";
+
+  // Check if it's an embed platform (YouTube, Streamable)
   const embedUrl = getEmbedUrl(rawUrl);
 
-  if (embedUrl) {
-    // Platform embed (YouTube / Streamable)
+  if (embedUrl && (embedUrl.includes("youtube") || embedUrl.includes("streamable"))) {
+    // Platform embed
     player.pause();
     player.removeAttribute("src");
     player.classList.add("hidden");
@@ -153,11 +178,16 @@ function playVideo(id, title) {
     iframe.src = embedUrl;
     iframe.classList.remove("hidden");
   } else {
-    // Direct file stream (.mp4 / Cloudflare Worker proxy)
+    // Direct file stream (.mp4 / GitHub raw media)
     iframe.removeAttribute("src");
     iframe.classList.add("hidden");
 
-    player.src = `${API_BASE}/stream/${id}`;
+    // If GitHub blob link was pasted, auto-convert to raw link
+    const targetUrl = rawUrl.includes("github.com/") && rawUrl.includes("/blob/")
+      ? rawUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+      : `${API_BASE}/stream/${id}`;
+
+    player.src = targetUrl;
     player.classList.remove("hidden");
     player.load();
     player.play().catch((err) => {
@@ -167,51 +197,6 @@ function playVideo(id, title) {
 
   document.getElementById("player-modal").classList.remove("hidden");
 }
-
-// ---- Close Player Modal ----
-document.getElementById("close-player").addEventListener("click", () => {
-  const player = document.getElementById("player");
-  const iframe = document.getElementById("iframe-player");
-
-  // Reset native player
-  player.pause();
-  player.removeAttribute("src");
-  player.load();
-  player.classList.add("hidden");
-
-  // Reset iframe
-  iframe.removeAttribute("src");
-  iframe.classList.add("hidden");
-
-  document.getElementById("player-modal").classList.add("hidden");
-});
-
-// ---- Admin Login ----
-document.getElementById("login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const password = document.getElementById("admin-password").value;
-  const errorEl = document.getElementById("login-error");
-  errorEl.textContent = "";
-
-  try {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      adminToken = data.token;
-      document.getElementById("login-form").classList.add("hidden");
-      document.getElementById("admin-dashboard").classList.remove("hidden");
-      renderAdminList();
-    } else {
-      errorEl.textContent = data.error || "Login failed";
-    }
-  } catch (err) {
-    errorEl.textContent = "Network error";
-  }
-});
 
 document.getElementById("close-admin").addEventListener("click", () => {
   document.getElementById("admin-modal").classList.add("hidden");
