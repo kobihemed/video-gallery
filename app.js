@@ -1,10 +1,10 @@
 // ======= CONFIGURE THESE TWO VALUES AFTER DEPLOYING THE WORKER =======
-const API_BASE = "https://video-gallery-api.YOUR-SUBDOMAIN.workers.dev";
+const API_BASE = "https://video-gallery-api.kobihemed.workers.dev";
 
 // SHA-256 hash of the secret keystroke sequence that reveals the admin panel.
 // The default below is the hash of "kobi2026" — CHANGE THIS before going live.
 // Generate your own with:  node -e "console.log(require('crypto').createHash('sha256').update('yourSecretPhrase').digest('hex'))"
-const TRIGGER_HASH = "de61d0018fdeb3b5df922c61918e90128f3b9646939f2fe0ae7b9435ffcaa306";
+const TRIGGER_HASH = "0c81d72d645b6f16b0c724269b7a3ae14105fb382826351a037e50a5037e3155";
 // =======================================================================
 
 let adminToken = null;
