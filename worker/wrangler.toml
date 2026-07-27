@@ -1,0 +1,10 @@
+name = "video-gallery-api"
+main = "index.js"
+compatibility_date = "2026-07-27"
+
+kv_namespaces = [
+  { binding = "VIDEOS_KV", id = "26ebf2bac8a64c4ea56842055a44bb8b" }
+]
+
+[vars]
+ALLOWED_ORIGIN = "https://kobihemed.github.io"
