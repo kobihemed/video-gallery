@@ -1,10 +1,26 @@
 * { box-sizing: border-box; }
 
+:root {
+  --page-bg: #14161a;
+  --header-color: #f0f0f0;
+  --grid-columns: 4;
+  --grid-gap: 20px;
+  --cell-height: auto;
+  --card-bg: #1e2126;
+  --card-text-color: #f0f0f0;
+  --card-border-width: 0px;
+  --card-border-color: transparent;
+  --card-padding: 0px;
+  --badge-bg: rgba(0, 0, 0, 0.75);
+  --badge-text: #ffffff;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  background: #14161a;
-  color: #f0f0f0;
+  background: var(--page-bg);
+  color: var(--card-text-color);
   margin: 0;
+  transition: background 0.15s ease;
 }
 
 header {
@@ -15,6 +31,18 @@ header {
 header h1 {
   margin: 0;
   font-weight: 600;
+  color: var(--header-color);
+  transition: color 0.15s ease;
+}
+
+.section-header {
+  max-width: 1400px;
+  margin: 20px auto 10px;
+  padding: 0 24px;
+  font-size: 20px;
+  color: var(--header-color);
+  border-bottom: 1px solid #2a2e35;
+  padding-bottom: 8px;
 }
 
 .grid {
@@ -27,19 +55,25 @@ header h1 {
 }
 
 .card {
-  background: var(--card-bg, #1e2126);
+  background: var(--card-bg);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border 0.15s ease;
   border: var(--card-border-width, 0px) solid var(--card-border-color, transparent);
   padding: var(--card-padding, 0px);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .card:hover {
   transform: translateY(-4px);
+}
+
+.thumb-container {
+  position: relative;
+  width: 100%;
 }
 
 .thumb {
@@ -51,9 +85,23 @@ header h1 {
   height: var(--cell-height, auto);
 }
 
+.duration-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
 .card .title {
   padding: 10px 12px;
   font-size: 14px;
+  color: var(--card-text-color);
 }
 
 .hidden { display: none !important; }
@@ -76,6 +124,7 @@ header h1 {
   max-height: 85vh;
   overflow-y: auto;
   position: relative;
+  color: #f0f0f0;
 }
 
 .close-btn {
@@ -95,11 +144,29 @@ header h1 {
   margin-top: 8px;
 }
 
+#iframe-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  margin-top: 8px;
+  background: #000;
+}
+
 form {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
+}
+
+.inline-form {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.inline-form input {
+  flex: 1;
 }
 
 input, select {
@@ -182,6 +249,12 @@ button[type="submit"]:hover {
   color: #9ca3af;
 }
 
+.setting-group input[type="color"] {
+  height: 38px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;
@@ -199,6 +272,20 @@ button[type="submit"]:hover {
 
 .secondary-btn:hover {
   background: #374151;
+}
+
+.danger-btn {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #7f1d1d;
+  background: #7f1d1d;
+  color: #fecaca;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.danger-btn:hover {
+  background: #991b1b;
 }
 
 .admin-list {
@@ -270,17 +357,8 @@ button[type="submit"]:hover {
   background: #991b1b;
 }
 
-/* Responsive Grid Overrides */
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
   }
-}
-
-#iframe-player {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 8px;
-  margin-top: 8px;
-  background: #000;
 }
