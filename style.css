@@ -276,3 +276,11 @@ button[type="submit"]:hover {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
   }
 }
+
+#iframe-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  margin-top: 8px;
+  background: #000;
+}
