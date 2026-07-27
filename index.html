@@ -9,11 +9,12 @@
 <body>
 
   <header>
-    <h1>Video Gallery</h1>
+    <h1 id="page-title-heading">Video Gallery</h1>
   </header>
 
-  <main id="gallery" class="grid">
+  <main id="gallery-container">
     <p id="empty-msg" class="hidden">No videos yet.</p>
+    <!-- Sections and grids will render dynamically here -->
   </main>
 
   <!-- Player modal -->
@@ -22,12 +23,12 @@
       <button id="close-player" class="close-btn" aria-label="Close">&times;</button>
       <h2 id="player-title"></h2>
       
-      <!-- Native video player -->
+      <!-- Native video tag -->
       <video id="player" controls playsinline class="hidden">
         Your browser does not support the video tag.
       </video>
 
-      <!-- Iframe player for YouTube, Streamable, etc. -->
+      <!-- Iframe player for embeds -->
       <iframe id="iframe-player" class="hidden" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
     </div>
   </div>
@@ -48,10 +49,23 @@
       <!-- Admin Dashboard -->
       <div id="admin-dashboard" class="hidden">
         
-        <!-- Grid Styling Controls -->
+        <!-- Page Title Customization -->
         <section class="admin-section">
-          <h3>Grid & Card Layout Settings</h3>
+          <h3>Page Branding</h3>
+          <div class="setting-group">
+            <label for="setting-page-title">Page Main Title</label>
+            <input type="text" id="setting-page-title" value="Video Gallery" placeholder="Enter Page Title">
+          </div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Grid & Styling Controls -->
+        <section class="admin-section">
+          <h3>Grid & Color Customization</h3>
           <div id="grid-settings-form" class="settings-grid">
+            
+            <!-- Grid Layout -->
             <div class="setting-group">
               <label for="setting-columns">Columns per Row</label>
               <input type="number" id="setting-columns" min="1" max="12" value="4">
@@ -61,7 +75,7 @@
               <input type="number" id="setting-gap" min="0" max="100" value="20">
             </div>
             <div class="setting-group">
-              <label for="setting-cell-height">Cell Aspect Ratio / Height</label>
+              <label for="setting-cell-height">Cell Height</label>
               <select id="setting-cell-height">
                 <option value="auto">Auto (16:9 Thumbnail)</option>
                 <option value="150px">Fixed 150px</option>
@@ -73,20 +87,58 @@
               <label for="setting-padding">Card Padding (px)</label>
               <input type="number" id="setting-padding" min="0" max="50" value="0">
             </div>
+
+            <!-- Color Pickers -->
             <div class="setting-group">
-              <label for="setting-bg-color">Card Background Color</label>
+              <label for="setting-page-bg">Page Background</label>
+              <input type="color" id="setting-page-bg" value="#14161a">
+            </div>
+            <div class="setting-group">
+              <label for="setting-header-color">Header / Title Color</label>
+              <input type="color" id="setting-header-color" value="#f0f0f0">
+            </div>
+            <div class="setting-group">
+              <label for="setting-bg-color">Card Background</label>
               <input type="color" id="setting-bg-color" value="#1e2126">
+            </div>
+            <div class="setting-group">
+              <label for="setting-card-text-color">Card Text Color</label>
+              <input type="color" id="setting-card-text-color" value="#f0f0f0">
             </div>
             <div class="setting-group">
               <label for="setting-border-width">Border Width (px)</label>
               <input type="number" id="setting-border-width" min="0" max="20" value="0">
             </div>
             <div class="setting-group">
-              <label for="setting-border-color">Border Color</label>
+              <label for="setting-border-color">Card Border Color</label>
               <input type="color" id="setting-border-color" value="#3a3f47">
             </div>
+            <div class="setting-group">
+              <label for="setting-badge-bg">Duration Badge BG</label>
+              <input type="color" id="setting-badge-bg" value="#000000">
+            </div>
+            <div class="setting-group">
+              <label for="setting-badge-text">Duration Badge Text</label>
+              <input type="color" id="setting-badge-text" value="#ffffff">
+            </div>
           </div>
-          <button id="save-grid-settings-btn" class="secondary-btn" style="margin-top: 10px;">Apply & Save Settings</button>
+
+          <div class="form-actions" style="margin-top: 15px;">
+            <button id="save-grid-settings-btn" class="secondary-btn">Save Layout & Colors</button>
+            <button id="reset-design-btn" class="danger-btn">Reset Design to Defaults</button>
+          </div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Section Management -->
+        <section class="admin-section">
+          <h3>Manage Gallery Sections</h3>
+          <form id="add-section-form" class="inline-form">
+            <input type="text" id="new-section-title" placeholder="New Section Header Name..." required>
+            <button type="submit">Add Section</button>
+          </form>
+          <ul id="admin-section-list" class="admin-list" style="margin-top: 10px;"></ul>
         </section>
 
         <hr class="divider">
@@ -99,7 +151,13 @@
             <input type="text" id="video-title" placeholder="Title" required>
             <input type="url" id="video-url" placeholder="Video URL (direct link / stream)" required>
             <input type="url" id="video-thumb" placeholder="Thumbnail URL (optional)">
+            <input type="text" id="video-duration" placeholder="Duration (e.g. 03:45 or 12:30)">
             
+            <label for="video-section-select" style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Assign to Section:</label>
+            <select id="video-section-select">
+              <option value="default">Default Section</option>
+            </select>
+
             <div class="form-actions">
               <button type="submit" id="save-video-btn">Add Video</button>
               <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancel Edit</button>
