@@ -49,13 +49,17 @@ function applyGridStyles() {
 
 // Sync UI inputs with local state
 function syncSettingsInputs() {
-  document.getElementById("setting-columns").value = gridSettings.columns;
-  document.getElementById("setting-gap").value = gridSettings.gap;
-  document.getElementById("setting-cell-height").value = gridSettings.cellHeight;
-  document.getElementById("setting-padding").value = gridSettings.padding;
-  document.getElementById("setting-bg-color").value = gridSettings.bgColor;
-  document.getElementById("setting-border-width").value = gridSettings.borderWidth;
-  document.getElementById("setting-border-color").value = gridSettings.borderColor;
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+  setVal("setting-columns", gridSettings.columns);
+  setVal("setting-gap", gridSettings.gap);
+  setVal("setting-cell-height", gridSettings.cellHeight);
+  setVal("setting-padding", gridSettings.padding);
+  setVal("setting-bg-color", gridSettings.bgColor);
+  setVal("setting-border-width", gridSettings.borderWidth);
+  setVal("setting-border-color", gridSettings.borderColor);
 }
 
 // ---- Load Gallery & Settings ----
@@ -119,11 +123,6 @@ function escapeHtml(str) {
 function getEmbedUrl(rawUrl) {
   if (!rawUrl) return null;
 
-  // Convert GitHub blob links directly to raw file URLs
-  if (rawUrl.includes("github.com/") && rawUrl.includes("/blob/")) {
-    return rawUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-  }
-
   // 1. YouTube
   const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
   if (ytMatch && ytMatch[1]) {
@@ -146,12 +145,16 @@ function playVideo(id, title) {
   document.getElementById("player-title").textContent = title;
 
   const videoObj = currentVideos.find((v) => v.id === id);
-  const rawUrl = videoObj ? videoObj.url : "";
+  let rawUrl = videoObj ? videoObj.url : "";
+
+  // Auto-clean GitHub blob URLs
+  if (rawUrl.includes("github.com/") && rawUrl.includes("/blob/")) {
+    rawUrl = rawUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+  }
 
   const embedUrl = getEmbedUrl(rawUrl);
 
-  if (embedUrl && (embedUrl.includes("youtube") || embedUrl.includes("streamable"))) {
-    // Platform embed
+  if (embedUrl) {
     player.pause();
     player.removeAttribute("src");
     player.classList.add("hidden");
@@ -159,15 +162,10 @@ function playVideo(id, title) {
     iframe.src = embedUrl;
     iframe.classList.remove("hidden");
   } else {
-    // Direct file stream / GitHub raw media
     iframe.removeAttribute("src");
     iframe.classList.add("hidden");
 
-    const targetUrl = rawUrl.includes("github.com/") && rawUrl.includes("/blob/")
-      ? rawUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-      : `${API_BASE}/stream/${id}`;
-
-    player.src = targetUrl;
+    player.src = rawUrl.startsWith("http") ? rawUrl : `${API_BASE}/stream/${id}`;
     player.classList.remove("hidden");
     player.load();
     player.play().catch((err) => {
@@ -256,20 +254,22 @@ document.getElementById("save-grid-settings-btn").addEventListener("click", asyn
   }
 });
 
-// ---- Add / Edit Video ----
+// ---- Add / Edit Video with Robust Error Handling ----
 document.getElementById("video-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const id = document.getElementById("video-id").value;
-  const title = document.getElementById("video-title").value;
-  const url = document.getElementById("video-url").value;
-  const thumbnail = document.getElementById("video-thumb").value;
   const statusEl = document.getElementById("add-status");
-  statusEl.textContent = "";
-
-  const endpoint = id ? `${API_BASE}/edit-video` : `${API_BASE}/add-video`;
-  const payload = id ? { id, title, url, thumbnail } : { title, url, thumbnail };
+  statusEl.textContent = "Saving...";
+  statusEl.style.color = "#9ad19a";
 
   try {
+    const id = document.getElementById("video-id").value;
+    const title = document.getElementById("video-title").value;
+    const url = document.getElementById("video-url").value;
+    const thumbnail = document.getElementById("video-thumb").value;
+
+    const endpoint = id ? `${API_BASE}/edit-video` : `${API_BASE}/add-video`;
+    const payload = id ? { id, title, url, thumbnail } : { title, url, thumbnail };
+
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -278,16 +278,27 @@ document.getElementById("video-form").addEventListener("submit", async (e) => {
       },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
+
+    const textRes = await res.text();
+    let data = {};
+    try {
+      data = JSON.parse(textRes);
+    } catch (parseErr) {
+      throw new Error(`Server returned non-JSON response: ${textRes.substring(0, 100)}`);
+    }
+
     if (res.ok) {
       resetForm();
-      statusEl.textContent = id ? "Video updated." : "Video added.";
+      statusEl.textContent = id ? "Video updated successfully." : "Video added successfully.";
       await loadGallery();
     } else {
-      statusEl.textContent = data.error || "Operation failed";
+      statusEl.style.color = "#f28b82";
+      statusEl.textContent = data.error || `Error ${res.status}: Operation failed`;
     }
   } catch (err) {
-    statusEl.textContent = "Network error";
+    statusEl.style.color = "#f28b82";
+    statusEl.textContent = `Client Error: ${err.message}`;
+    console.error("Submit Error:", err);
   }
 });
 
@@ -341,7 +352,6 @@ function renderAdminList() {
       </div>
     `;
 
-    // Manual slot placement
     const posInput = li.querySelector(".pos-input");
     posInput.addEventListener("change", (e) => {
       const newPos = parseInt(e.target.value, 10) - 1;
@@ -350,7 +360,6 @@ function renderAdminList() {
       }
     });
 
-    // Drag and Drop Events
     li.addEventListener("dragstart", () => {
       draggedIndex = index;
       li.classList.add("dragging");
