@@ -53,8 +53,7 @@ header h1 {
   flex: 1;
 }
 
-/* --- Sticky Section Quick Navigation Bar --- */
-
+/* Sticky Quick Section Navigation Bar */
 .section-nav-bar {
   position: sticky;
   top: 0;
@@ -114,8 +113,7 @@ header h1 {
   font-size: 11px;
 }
 
-/* --- Section Headers & Grids --- */
-
+/* Section Headers & Grids */
 .section-header-wrapper {
   max-width: 1400px;
   margin: 24px auto 12px;
@@ -126,7 +124,7 @@ header h1 {
   border-bottom: 1px solid #2a2e35;
   cursor: pointer;
   user-select: none;
-  scroll-margin-top: 60px; /* Offset for sticky nav bar */
+  scroll-margin-top: 60px;
 }
 
 .section-header-wrapper h2 {
@@ -155,7 +153,6 @@ header h1 {
   margin: 0 auto;
 }
 
-/* List View Override Mode */
 .grid.list-view {
   grid-template-columns: 1fr !important;
 }
@@ -333,7 +330,6 @@ button[type="submit"]:hover { background: #3a78bd; }
 #add-status { font-size: 13px; margin: 0; color: #9ad19a; }
 
 /* Admin Controls & Filters */
-
 .admin-content { width: min(92vw, 850px); }
 
 .admin-header-bar {
