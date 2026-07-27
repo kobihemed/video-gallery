@@ -114,26 +114,75 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ---- Video Player Fix ----
-function playVideo(id, title) {
-  const player = document.getElementById("player");
-  document.getElementById("player-title").textContent = title;
-  
-  // Directly set src on HTML5 video element instead of child <source> tag
-  player.src = `${API_BASE}/stream/${id}`;
-  player.load();
-  
-  document.getElementById("player-modal").classList.remove("hidden");
-  player.play().catch((err) => {
-    console.warn("Autoplay blocked or playback error:", err);
-  });
+// ---- Helper to parse & convert third-party embed links ----
+function getEmbedUrl(rawUrl) {
+  if (!rawUrl) return null;
+
+  // 1. YouTube (e.g. https://youtu.be/uwKcL3540fk?si=... or https://www.youtube.com/watch?v=uwKcL3540fk)
+  const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1`;
+  }
+
+  // 2. Streamable (e.g. https://streamable.com/e/8fkg7h or https://streamable.com/8fkg7h)
+  const streamableMatch = rawUrl.match(/streamable\.com\/(?:e\/)?([a-zA-Z0-9]+)/);
+  if (streamableMatch && streamableMatch[1]) {
+    return `https://streamable.com/e/${streamableMatch[1]}?autoplay=1`;
+  }
+
+  return null;
 }
 
+// ---- Universal Video Player Handler ----
+function playVideo(id, title) {
+  const player = document.getElementById("player");
+  const iframe = document.getElementById("iframe-player");
+  document.getElementById("player-title").textContent = title;
+
+  // Find the video object from loaded gallery list
+  const videoObj = currentVideos.find((v) => v.id === id);
+  const rawUrl = videoObj ? videoObj.url : "";
+  const embedUrl = getEmbedUrl(rawUrl);
+
+  if (embedUrl) {
+    // Platform embed (YouTube / Streamable)
+    player.pause();
+    player.removeAttribute("src");
+    player.classList.add("hidden");
+
+    iframe.src = embedUrl;
+    iframe.classList.remove("hidden");
+  } else {
+    // Direct file stream (.mp4 / Cloudflare Worker proxy)
+    iframe.removeAttribute("src");
+    iframe.classList.add("hidden");
+
+    player.src = `${API_BASE}/stream/${id}`;
+    player.classList.remove("hidden");
+    player.load();
+    player.play().catch((err) => {
+      console.warn("Autoplay blocked or playback error:", err);
+    });
+  }
+
+  document.getElementById("player-modal").classList.remove("hidden");
+}
+
+// ---- Close Player Modal ----
 document.getElementById("close-player").addEventListener("click", () => {
   const player = document.getElementById("player");
+  const iframe = document.getElementById("iframe-player");
+
+  // Reset native player
   player.pause();
-  player.removeAttribute("src"); // Clear resource link
+  player.removeAttribute("src");
   player.load();
+  player.classList.add("hidden");
+
+  // Reset iframe
+  iframe.removeAttribute("src");
+  iframe.classList.add("hidden");
+
   document.getElementById("player-modal").classList.add("hidden");
 });
 
